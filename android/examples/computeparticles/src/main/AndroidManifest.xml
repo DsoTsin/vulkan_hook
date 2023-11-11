@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="de.saschawillems.vulkanComputeparticles">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
         android:label="Vulkan compute particle system"
         android:icon="@drawable/icon"
+        android:process="de.s.cp"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         <activity android:name="de.saschawillems.vulkanSample.VulkanActivity"
             android:screenOrientation="landscape"
@@ -15,6 +15,11 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity android:name="de.saschawillems.vulkanSample.ManetReplayActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|keyboardHidden">
         </activity>
     </application>
 

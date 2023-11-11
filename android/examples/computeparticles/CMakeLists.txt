@@ -6,11 +6,14 @@ set(SRC_DIR ../../../examples/${NAME})
 set(BASE_DIR ../../../base)
 set(EXTERNAL_DIR ../../../external)
 
+add_subdirectory(../../../mali_syshook ${CMAKE_SOURCE_DIR}/../../../mali_syshook)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DVK_USE_PLATFORM_ANDROID_KHR -DVK_NO_PROTOTYPES")
 
 file(GLOB EXAMPLE_SRC "${SRC_DIR}/*.cpp")
 
 add_library(native-lib SHARED ${EXAMPLE_SRC})
+add_library(manet_replay_bridge SHARED manet_replay_bridge.cpp)
 
 add_library(native-app-glue STATIC ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
@@ -31,4 +34,10 @@ target_link_libraries(
     android
     log
     z
+)
+
+target_link_libraries(
+    manet_replay_bridge
+    android
+    log
 )

@@ -13,5 +13,13 @@ else
 fi
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
+LOG_DIR=/sdcard/Android/data/de.saschawillems.vulkanTriangle/files
+mkdir -p "$LOG_DIR"
+export MALI_HOOK_LOG="$LOG_DIR/mali_hook_triangle.jsonl"
+export MALI_HOOK_MAX_FRAMES=2
+export MALI_HOOK_REPLAY_SNAPSHOT=1
+# dump_blob_file is page-resilient now (mincore per page, zero-fill
+# absent pages) so the 4 MB default cap captures EXEC-zone shader
+# binaries (~85 KB in) and the 16 MB pools without EFAULT truncation.
 export LD_PRELOAD=$HERE/libmali_syshook.so
 exec $cmd

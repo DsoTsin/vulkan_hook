@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 apply from: '../gradle/outputfilename.gradle'
 
 android {
+    namespace "de.saschawillems.vulkanRaytracingreflections"
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "de.saschawillems.vulkanRaytracingreflections"

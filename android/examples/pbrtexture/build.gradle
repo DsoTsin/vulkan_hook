@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 apply from: '../gradle/outputfilename.gradle'
 
 android {
+    namespace "de.saschawillems.vulkanPBRTexture"
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "de.saschawillems.vulkanPBRTexture"
@@ -15,12 +16,18 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++14"
-                arguments "-DANDROID_STL=c++_shared", '-DANDROID_TOOLCHAIN=clang'
+                arguments "-DANDROID_STL=c++_static", '-DANDROID_TOOLCHAIN=clang', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+                targets "native-lib", "mali_syshook"
             }
         }
     }
     sourceSets {
         main.assets.srcDirs = ['assets']
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
     buildTypes {
         release {

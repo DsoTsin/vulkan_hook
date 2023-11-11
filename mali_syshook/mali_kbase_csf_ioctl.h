@@ -440,6 +440,38 @@ struct kbase_ioctl_cs_cpu_queue_info {
 #define KBASE_IOCTL_CS_CPU_QUEUE_DUMP \
 	_IOW(KBASE_IOCTL_TYPE, 53, struct kbase_ioctl_cs_cpu_queue_info)
 
+/**
+ * union kbase_ioctl_mem_alloc_ex - Allocate memory on the GPU
+ * @in: Input parameters
+ * @in.va_pages: The number of pages of virtual address space to reserve
+ * @in.commit_pages: The number of physical pages to allocate
+ * @in.extension: The number of extra pages to allocate on each GPU fault which grows the region
+ * @in.flags: Flags
+ * @in.fixed_address: The GPU virtual address requested for the allocation,
+ *                    if the allocation is using the BASE_MEM_FIXED flag.
+ * @in.extra: Space for extra parameters that may be added in the future.
+ * @out: Output parameters
+ * @out.flags: Flags
+ * @out.gpu_va: The GPU virtual address which is allocated
+ */
+union kbase_ioctl_mem_alloc_ex {
+	struct {
+		__u64 va_pages;
+		__u64 commit_pages;
+		__u64 extension;
+		__u64 flags;
+		__u64 fixed_address;
+		__u64 extra[3];
+	} in;
+	struct {
+		__u64 flags;
+		__u64 gpu_va;
+	} out;
+};
+
+#define KBASE_IOCTL_MEM_ALLOC_EX _IOWR(KBASE_IOCTL_TYPE, 59, union kbase_ioctl_mem_alloc_ex)
+
+
 /***************
  * test ioctls *
  ***************/

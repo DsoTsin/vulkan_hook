@@ -29,7 +29,6 @@ include_directories(${ANDROID_NDK}/sources/android/native_app_glue)
 target_link_libraries(
     native-lib
     native-app-glue
-    mali_syshook
     libbase
     android
     log

@@ -2,11 +2,12 @@ apply plugin: 'com.android.application'
 apply from: '../gradle/outputfilename.gradle'
 
 android {
+    namespace "de.saschawillems.vulkanComputeparticles"
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "de.saschawillems.vulkanComputeparticles"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion 29
+        targetSdkVersion 29
         versionCode 1
         versionName "1.0"
         ndk {
@@ -15,8 +16,14 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++14"
-                arguments "-DANDROID_STL=c++_shared", '-DANDROID_TOOLCHAIN=clang'
+                arguments "-DANDROID_STL=c++_static", '-DANDROID_TOOLCHAIN=clang', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+                targets "native-lib", "mali_syshook", "manet_replay_bridge"
             }
+        }
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
     sourceSets {
