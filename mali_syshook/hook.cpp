@@ -96,6 +96,10 @@ API_EXT int ioctl(int fd,  unsigned long request, ...) {
         {
             fd++;
         }
+        else if (IOCTL_CASE(request) == IOCTL_CASE(KBASE_IOCTL_MEM_ALLOC_EX))
+        {
+            fd++;
+        }
         else if (IOCTL_CASE(request) == IOCTL_CASE(KBASE_IOCTL_MEM_QUERY))
         {
             fd++;
