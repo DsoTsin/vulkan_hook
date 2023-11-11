@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/bloom/android.bloom.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/bloom/android.bloom.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/computecloth/android.computecloth.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/computecloth/android.computecloth.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/computecullandlod/android.computecullandlod.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/computecullandlod/android.computecullandlod.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/computeheadless/android.computeheadless.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/computeheadless/android.computeheadless.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/computenbody/android.computenbody.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/computenbody/android.computenbody.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/computeparticles/android.computeparticles.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/computeparticles/android.computeparticles.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/computeraytracing/android.computeraytracing.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/computeraytracing/android.computeraytracing.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/computeshader/android.computeshader.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/computeshader/android.computeshader.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/conservativeraster/android.conservativeraster.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/conservativeraster/android.conservativeraster.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/debugmarker/android.debugmarker.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/debugmarker/android.debugmarker.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/deferred/android.deferred.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/deferred/android.deferred.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/deferredmultisampling/android.deferredmultisampling.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/deferredmultisampling/android.deferredmultisampling.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/deferredshadows/android.deferredshadows.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/deferredshadows/android.deferredshadows.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/descriptorindexing/android.descriptorindexing.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/descriptorindexing/android.descriptorindexing.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/descriptorsets/android.descriptorsets.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/descriptorsets/android.descriptorsets.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/displacement/android.displacement.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/displacement/android.displacement.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/distancefieldfonts/android.distancefieldfonts.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/distancefieldfonts/android.distancefieldfonts.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/dynamicuniformbuffer/android.dynamicuniformbuffer.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/dynamicuniformbuffer/android.dynamicuniformbuffer.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/gears/android.gears.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/gears/android.gears.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/geometryshader/android.geometryshader.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/geometryshader/android.geometryshader.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/gltfloading/android.gltfloading.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/gltfloading/android.gltfloading.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/gltfscenerendering/android.gltfscenerendering.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/gltfscenerendering/android.gltfscenerendering.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/gltfskinning/android.gltfskinning.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/gltfskinning/android.gltfskinning.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/hdr/android.hdr.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/hdr/android.hdr.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/imgui/android.imgui.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/imgui/android.imgui.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/indirectdraw/android.indirectdraw.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/indirectdraw/android.indirectdraw.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/inlineuniformblocks/android.inlineuniformblocks.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/inlineuniformblocks/android.inlineuniformblocks.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/inputattachments/android.inputattachments.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/inputattachments/android.inputattachments.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/instancing/android.instancing.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/instancing/android.instancing.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/multisampling/android.multisampling.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/multisampling/android.multisampling.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/multithreading/android.multithreading.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/multithreading/android.multithreading.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/multiview/android.multiview.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/multiview/android.multiview.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/negativeviewportheight/android.negativeviewportheight.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/negativeviewportheight/android.negativeviewportheight.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/occlusionquery/android.occlusionquery.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/occlusionquery/android.occlusionquery.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/offscreen/android.offscreen.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/offscreen/android.offscreen.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/oit/android.oit.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/oit/android.oit.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/parallaxmapping/android.parallaxmapping.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/parallaxmapping/android.parallaxmapping.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/particlefire/android.particlefire.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/particlefire/android.particlefire.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/pbrbasic/android.pbrbasic.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/pbrbasic/android.pbrbasic.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/pbribl/android.pbribl.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/pbribl/android.pbribl.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/pbrtexture/android.pbrtexture.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/pbrtexture/android.pbrtexture.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/pipelines/android.pipelines.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/pipelines/android.pipelines.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/pipelinestatistics/android.pipelinestatistics.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/pipelinestatistics/android.pipelinestatistics.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/pushconstants/android.pushconstants.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/pushconstants/android.pushconstants.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/pushdescriptors/android.pushdescriptors.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/pushdescriptors/android.pushdescriptors.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/radialblur/android.radialblur.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/radialblur/android.radialblur.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/rayquery/android.rayquery.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/rayquery/android.rayquery.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/raytracingbasic/android.raytracingbasic.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/raytracingbasic/android.raytracingbasic.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/raytracingreflections/android.raytracingreflections.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/raytracingreflections/android.raytracingreflections.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/raytracingshadows/android.raytracingshadows.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/raytracingshadows/android.raytracingshadows.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/renderheadless/android.renderheadless.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/renderheadless/android.renderheadless.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/screenshot/android.screenshot.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/screenshot/android.screenshot.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/shadowmapping/android.shadowmapping.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/shadowmapping/android.shadowmapping.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/shadowmappingcascade/android.shadowmappingcascade.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/shadowmappingcascade/android.shadowmappingcascade.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/shadowmappingomni/android.shadowmappingomni.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/shadowmappingomni/android.shadowmappingomni.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/specializationconstants/android.specializationconstants.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/specializationconstants/android.specializationconstants.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/sphericalenvmapping/android.sphericalenvmapping.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/sphericalenvmapping/android.sphericalenvmapping.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/ssao/android.ssao.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/ssao/android.ssao.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/stencilbuffer/android.stencilbuffer.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/stencilbuffer/android.stencilbuffer.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/subpasses/android.subpasses.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/subpasses/android.subpasses.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/terraintessellation/android.terraintessellation.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/terraintessellation/android.terraintessellation.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/tessellation/android.tessellation.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/tessellation/android.tessellation.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/textoverlay/android.textoverlay.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/textoverlay/android.textoverlay.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/texture/android.texture.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/texture/android.texture.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/texture3d/android.texture3d.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/texture3d/android.texture3d.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/texturearray/android.texturearray.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/texturearray/android.texturearray.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/texturecubemap/android.texturecubemap.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/texturecubemap/android.texturecubemap.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/texturecubemaparray/android.texturecubemaparray.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/texturecubemaparray/android.texturecubemaparray.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/texturemipmapgen/android.texturemipmapgen.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/texturemipmapgen/android.texturemipmapgen.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/triangle/android.triangle.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/triangle/android.triangle.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/vertexattributes/android.vertexattributes.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/vertexattributes/android.vertexattributes.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/viewportarray/android.viewportarray.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/viewportarray/android.viewportarray.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/examples/vulkanscene/android.vulkanscene.main.iml" filepath="$PROJECT_DIR$/.idea/modules/examples/vulkanscene/android.vulkanscene.main.iml" />
+    </modules>
+  </component>
+</project>
