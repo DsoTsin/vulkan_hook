@@ -1,18 +1,31 @@
-#include <stdlib.h>
-#include <stdarg.h>
-#include <dlfcn.h>
-#include <string.h>
 #include "mali_base_kernel.h"
 #include "mali_kbase_ioctl.h"
 #include "mali_base_csf_kernel.h"
 #include "mali_kbase_csf_ioctl.h"
+
+#include <string.h>
+
+#include <dlfcn.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#include <sys/system_properties.h>
+#include <android/log.h>
+
+#include <set>
+#include <mutex>
 
 typedef void* (*mmap_func)(void *, size_t, int, int, int, loff_t);
 typedef int (*open_func)(const char *, int flags, ...);
 typedef int (*PFN_open2)(const char *, int flags);
 typedef int (*PFN_ioctl)(int fd,  unsigned long request, void*);
 
-static int mali_fd = 0;
+static std::mutex mali_fds_mutex;
+static std::set<int> mali_fds;
+
+static std::mutex sock_mutex;
+int analyze_sock = -1;
 
 #define API_EXT extern "C" __attribute__((visibility("default")))
 
@@ -21,11 +34,18 @@ open_func origin_open64 = NULL;
 PFN_open2 origin_open2 = NULL;
 PFN_ioctl origin_ioctl = NULL;
 
+#define TAG "MALI_SYSHOOK"
+
 API_EXT void __attribute__((constructor(101))) constructor_util(void) {
     origin_open = (open_func)dlsym(RTLD_NEXT, "open64");
     origin_open64 = (open_func)dlsym(RTLD_NEXT, "open64");
     origin_ioctl = (PFN_ioctl)dlsym(RTLD_NEXT, "ioctl");
     origin_open2 = (PFN_open2)dlsym(RTLD_NEXT, "__open_2");
+    char prop_value[128] = { 0 };
+    if (__system_property_get("debug.mali.transport.address", prop_value) > 0)
+    {
+        __android_log_print(ANDROID_LOG_INFO, TAG, "mali transport address is '%s'.", prop_value);
+    }
 //    dlsym(handle, "mmap");
 //    dlsym(handle, "mmap64");
 //    dlsym(handle, "ioctl");
@@ -57,7 +77,15 @@ __open_2(const char *path, int flags)
     int o = origin_open2(path, flags);
     if (!strcmp("/dev/mali0", path))
     {
-        mali_fd = o;
+        if (analyze_sock == -1)
+        {
+            analyze_sock = socket(AF_INET, SOCK_STREAM, 0);
+        }
+        {
+            std::lock_guard<std::mutex> _(mali_fds_mutex);
+            mali_fds.insert(o);
+        }
+        __android_log_print(ANDROID_LOG_INFO, TAG, "open mali dev node %d.", o);
     }
     return o;
 }
@@ -76,17 +104,25 @@ open64(const char *path, int flags, ...)
 #define IOCTL_CASE(request) (_IOWR(_IOC_TYPE(request), _IOC_NR(request), \
 				   _IOC_SIZE(request)))
 
-API_EXT int ioctl(int fd,  unsigned long request, ...) {
+API_EXT int ioctl(int fd,  unsigned long request, ...)
+{
     if (origin_ioctl == nullptr)
     {
         origin_ioctl = (PFN_ioctl)dlsym(RTLD_NEXT, "ioctl");
     }
+    bool is_in_mali_fds = false;
+    {
+        std::lock_guard<std::mutex> _(mali_fds_mutex);
+        is_in_mali_fds = mali_fds.find(fd) != mali_fds.end();
+    }
+
     va_list args;
     va_start(args, request);
     void *p = va_arg(args, void *);
     va_end(args);
     int r = origin_ioctl(fd, request, p);
-    if (fd == mali_fd)
+
+    if (is_in_mali_fds)
     {
         if (IOCTL_CASE(request) == IOCTL_CASE(KBASE_IOCTL_GET_GPUPROPS))
         {
@@ -138,6 +174,8 @@ API_EXT int ioctl(int fd,  unsigned long request, ...) {
         }
         else if (IOCTL_CASE(request) == IOCTL_CASE(KBASE_IOCTL_MEM_IMPORT))
         {
+            auto import_args = (const kbase_ioctl_mem_import*)p;
+
             fd++;
         }
         else if (IOCTL_CASE(request) == IOCTL_CASE(KBASE_IOCTL_MEM_EXEC_INIT))

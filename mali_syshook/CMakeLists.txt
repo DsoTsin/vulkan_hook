@@ -8,3 +8,4 @@ set(MALI_SYS_SRCS
 source_group(mali FILES ${MALI_SYS_SRCS})
 
 add_library(mali_syshook SHARED ${MALI_SYS_SRCS})
+target_link_libraries(mali_syshook log)
