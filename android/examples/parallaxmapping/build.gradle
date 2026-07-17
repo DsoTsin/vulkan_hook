@@ -14,8 +14,8 @@ android {
         }
         externalNativeBuild {
             cmake {
-                cppFlags "-std=c++14"
-                arguments "-DANDROID_STL=c++_shared", '-DANDROID_TOOLCHAIN=clang'
+                cppFlags "-std=c++20"
+                arguments "-DANDROID_STL=c++_shared", '-DANDROID_TOOLCHAIN=clang', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
             }
         }
     }
@@ -57,7 +57,7 @@ task copyTask {
     copy {
        from rootProject.ext.assetPath + 'models'
        into 'assets/models'
-       include 'planecd.gltf'
+       include 'plane.gltf'
     }
 
     copy {

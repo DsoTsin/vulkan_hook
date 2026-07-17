@@ -1,10 +1,17 @@
 /*
 * Vulkan glTF model and texture loading class based on tinyglTF (https://github.com/syoyo/tinygltf)
 *
-* Copyright (C) 2018 by Sascha Willems - www.saschawillems.de
+* Copyright (C) 2018-2026 by Sascha Willems - www.saschawillems.de
 *
 * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
 */
+
+/*
+ * Note that this isn't a complete glTF loader and not all features of the glTF 2.0 spec are supported
+ * For details on how glTF 2.0 works, see the official spec at https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
+ *
+ * If you are looking for a complete glTF implementation, check out https://github.com/SaschaWillems/Vulkan-glTF-PBR/
+ */
 
 #pragma once
 
@@ -63,6 +70,7 @@ namespace vkglTF
 		uint32_t layerCount;
 		VkDescriptorImageInfo descriptor;
 		VkSampler sampler;
+		uint32_t index;
 		void updateDescriptor();
 		void destroy();
 		void fromglTfImage(tinygltf::Image& gltfimage, std::string path, vks::VulkanDevice* device, VkQueue copyQueue);
@@ -233,7 +241,8 @@ namespace vkglTF
 		PreTransformVertices = 0x00000001,
 		PreMultiplyVertexColors = 0x00000002,
 		FlipY = 0x00000004,
-		DontLoadImages = 0x00000008
+		DontLoadImages = 0x00000008,
+		FlipUV = 0x00000010
 	};
 
 	enum RenderFlags {
@@ -303,6 +312,7 @@ namespace vkglTF
 		void updateAnimation(uint32_t index, float time);
 		Node* findNode(Node* parent, uint32_t index);
 		Node* nodeFromIndex(uint32_t index);
+		Node* nodeFromName(const std::string name);
 		void prepareNodeDescriptor(vkglTF::Node* node, VkDescriptorSetLayout descriptorSetLayout);
 	};
 }

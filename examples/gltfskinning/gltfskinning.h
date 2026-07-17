@@ -1,7 +1,7 @@
 /*
 * Vulkan Example - glTF skinned animation
 *
-* Copyright (C) 2020 by Sascha Willems - www.saschawillems.de
+* Copyright (C) 2020-2025 by Sascha Willems - www.saschawillems.de
 *
 * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
 */
@@ -38,7 +38,6 @@
 #include "vulkanexamplebase.h"
 #include <vulkan/vulkan.h>
 
-#define ENABLE_VALIDATION false
 
 // Contains everything required to render a glTF model in Vulkan
 // This class is heavily simplified (compared to glTF's feature set) but retains the basic glTF structure
@@ -126,12 +125,13 @@ class VulkanglTFModel
 
 	struct Skin
 	{
-		std::string            name;
-		Node *                 skeletonRoot = nullptr;
+		std::string name;
+		Node *skeletonRoot = nullptr;
 		std::vector<glm::mat4> inverseBindMatrices;
-		std::vector<Node *>    joints;
-		vks::Buffer            ssbo;
-		VkDescriptorSet        descriptorSet;
+		std::vector<Node *> joints;
+		// Animation data changes between frames, it needs to be duplicated (per frame in flight)
+		std::array<vks::Buffer, maxConcurrentFrames> storageBuffers;
+		std::array<VkDescriptorSet, maxConcurrentFrames> descriptorSets{};
 	};
 
 	/*
@@ -170,6 +170,7 @@ class VulkanglTFModel
 	std::vector<Animation> animations;
 
 	uint32_t activeAnimation = 0;
+	uint32_t currentBuffer = 0;
 
 	~VulkanglTFModel();
 	void      loadImages(tinygltf::Model &input);
@@ -182,7 +183,7 @@ class VulkanglTFModel
 	void      loadNode(const tinygltf::Node &inputNode, const tinygltf::Model &input, VulkanglTFModel::Node *parent, uint32_t nodeIndex, std::vector<uint32_t> &indexBuffer, std::vector<VulkanglTFModel::Vertex> &vertexBuffer);
 	glm::mat4 getNodeMatrix(VulkanglTFModel::Node *node);
 	void      updateJoints(VulkanglTFModel::Node *node);
-	void      updateAnimation(float deltaTime);
+	void      updateAnimation(float deltaTime, uint32_t currentBuffer);
 	void      drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VulkanglTFModel::Node node);
 	void      draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
 };
@@ -192,31 +193,28 @@ class VulkanExample : public VulkanExampleBase
   public:
 	bool wireframe = false;
 
-	struct ShaderData
+	struct UniformData
 	{
-		vks::Buffer buffer;
-		struct Values
-		{
-			glm::mat4 projection;
-			glm::mat4 model;
-			glm::vec4 lightPos = glm::vec4(5.0f, 5.0f, 5.0f, 1.0f);
-		} values;
-	} shaderData;
+		glm::mat4 projection;
+		glm::mat4 model;
+		glm::vec4 lightPos = glm::vec4(5.0f, 5.0f, 5.0f, 1.0f);
+	} uniformData;
+	std::array<vks::Buffer, maxConcurrentFrames> uniformBuffers;
 
-	VkPipelineLayout pipelineLayout;
+	VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
 	struct Pipelines
 	{
-		VkPipeline solid;
-		VkPipeline wireframe = VK_NULL_HANDLE;
+		VkPipeline solid{ VK_NULL_HANDLE };
+		VkPipeline wireframe{ VK_NULL_HANDLE };
 	} pipelines;
 
 	struct DescriptorSetLayouts
 	{
-		VkDescriptorSetLayout matrices;
-		VkDescriptorSetLayout textures;
-		VkDescriptorSetLayout jointMatrices;
+		VkDescriptorSetLayout matrices{ VK_NULL_HANDLE };
+		VkDescriptorSetLayout textures{ VK_NULL_HANDLE };
+		VkDescriptorSetLayout jointMatrices{ VK_NULL_HANDLE };
 	} descriptorSetLayouts;
-	VkDescriptorSet descriptorSet;
+	std::array<VkDescriptorSet, maxConcurrentFrames> descriptorSets{};
 
 	VulkanglTFModel glTFModel;
 
@@ -224,7 +222,7 @@ class VulkanExample : public VulkanExampleBase
 	~VulkanExample();
 	void         loadglTFFile(std::string filename);
 	virtual void getEnabledFeatures();
-	void         buildCommandBuffers();
+	void         buildCommandBuffer();
 	void         loadAssets();
 	void         setupDescriptors();
 	void         preparePipelines();
@@ -232,6 +230,5 @@ class VulkanExample : public VulkanExampleBase
 	void         updateUniformBuffers();
 	void         prepare();
 	virtual void render();
-	virtual void viewChanged();
 	virtual void OnUpdateUIOverlay(vks::UIOverlay *overlay);
 };

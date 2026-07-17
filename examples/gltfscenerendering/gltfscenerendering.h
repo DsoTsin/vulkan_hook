@@ -1,7 +1,7 @@
 /*
 * Vulkan Example - Scene rendering
 *
-* Copyright (C) 2020-2022 by Sascha Willems - www.saschawillems.de
+* Copyright (C) 2020-2025 by Sascha Willems - www.saschawillems.de
 *
 * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
 *
@@ -24,7 +24,6 @@
 
 #include "vulkanexamplebase.h"
 
-#define ENABLE_VALIDATION false
 
  // Contains everything required to render a basic glTF scene in Vulkan
  // This class is heavily simplified (compared to glTF's feature set) but retains the basic glTF structure
@@ -137,28 +136,26 @@ class VulkanExample : public VulkanExampleBase
 public:
 	VulkanglTFScene glTFScene;
 
-	struct ShaderData {
-		vks::Buffer buffer;
-		struct Values {
-			glm::mat4 projection;
-			glm::mat4 view;
-			glm::vec4 lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
-			glm::vec4 viewPos;
-		} values;
-	} shaderData;
+	struct UniformData {
+		glm::mat4 projection;
+		glm::mat4 view;
+		glm::vec4 lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
+		glm::vec4 viewPos;
+	} uniformData;
+	std::array<vks::Buffer, maxConcurrentFrames> uniformBuffers;
 
-	VkPipelineLayout pipelineLayout;
-	VkDescriptorSet descriptorSet;
+	VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
 
 	struct DescriptorSetLayouts {
-		VkDescriptorSetLayout matrices;
-		VkDescriptorSetLayout textures;
+		VkDescriptorSetLayout matrices{ VK_NULL_HANDLE };
+		VkDescriptorSetLayout textures{ VK_NULL_HANDLE };
 	} descriptorSetLayouts;
+	std::array<VkDescriptorSet, maxConcurrentFrames> descriptorSets{};
 
 	VulkanExample();
 	~VulkanExample();
 	virtual void getEnabledFeatures();
-	void buildCommandBuffers();
+	void buildCommandBuffer();
 	void loadglTFFile(std::string filename);
 	void loadAssets();
 	void setupDescriptors();
@@ -167,6 +164,5 @@ public:
 	void updateUniformBuffers();
 	void prepare();
 	virtual void render();
-	virtual void viewChanged();
 	virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay);
 };

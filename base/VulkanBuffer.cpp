@@ -3,7 +3,7 @@
 *
 * Encapsulates a Vulkan buffer
 *
-* Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
+* Copyright (C) 2016-2025 by Sascha Willems - www.saschawillems.de
 *
 * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
 */
@@ -90,11 +90,12 @@ namespace vks
 	*/
 	VkResult Buffer::flush(VkDeviceSize size, VkDeviceSize offset)
 	{
-		VkMappedMemoryRange mappedRange = {};
-		mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		mappedRange.memory = memory;
-		mappedRange.offset = offset;
-		mappedRange.size = size;
+		VkMappedMemoryRange mappedRange{
+			.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+			.memory = memory,
+			.offset = offset,
+			.size = size
+		};
 		return vkFlushMappedMemoryRanges(device, 1, &mappedRange);
 	}
 
@@ -110,11 +111,12 @@ namespace vks
 	*/
 	VkResult Buffer::invalidate(VkDeviceSize size, VkDeviceSize offset)
 	{
-		VkMappedMemoryRange mappedRange = {};
-		mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		mappedRange.memory = memory;
-		mappedRange.offset = offset;
-		mappedRange.size = size;
+		VkMappedMemoryRange mappedRange{
+			.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+			.memory = memory,
+			.offset = offset,
+			.size = size
+		};
 		return vkInvalidateMappedMemoryRanges(device, 1, &mappedRange);
 	}
 
@@ -126,10 +128,12 @@ namespace vks
 		if (buffer)
 		{
 			vkDestroyBuffer(device, buffer, nullptr);
+			buffer = VK_NULL_HANDLE;
 		}
 		if (memory)
 		{
 			vkFreeMemory(device, memory, nullptr);
+			memory = VK_NULL_HANDLE;
 		}
 	}
 };

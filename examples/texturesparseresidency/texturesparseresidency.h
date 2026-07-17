@@ -1,19 +1,17 @@
 /*
 * Vulkan Example - Sparse texture residency example
 *
-* Copyright (C) 2016-2020 by Sascha Willems - www.saschawillems.de
+* Copyright (C) 2016-2025 by Sascha Willems - www.saschawillems.de
 *
 * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
 */
 
 /*
-* Note : This sample is work-in-progress and works basically, but it's not yet finished
+* Important note : This sample is work-in-progress and works basically, but it's not finished
 */
 
 #include "vulkanexamplebase.h"
 #include "VulkanglTFModel.h"
-
-#define ENABLE_VALIDATION false
 
 // Virtual texture page as a part of the partially resident texture
 // Contains memory bindings, offsets and status information
@@ -81,21 +79,21 @@ public:
 
 	vkglTF::Model plane;
 
-	struct UboVS {
+	struct UniformData {
 		glm::mat4 projection;
 		glm::mat4 model;
 		glm::vec4 viewPos;
 		float lodBias = 0.0f;
-	} uboVS;
-	vks::Buffer uniformBufferVS;
+	} uniformData;
+	std::array<vks::Buffer, maxConcurrentFrames> uniformBuffers;
 
-	VkPipeline pipeline;
-	VkPipelineLayout pipelineLayout;
-	VkDescriptorSet descriptorSet;
-	VkDescriptorSetLayout descriptorSetLayout;
+	VkPipeline pipeline{ VK_NULL_HANDLE };
+	VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
+	VkDescriptorSetLayout descriptorSetLayout{ VK_NULL_HANDLE };
+	std::array<VkDescriptorSet, maxConcurrentFrames> descriptorSets{};
 
 	//todo: comment
-	VkSemaphore bindSparseSemaphore = VK_NULL_HANDLE;
+	VkSemaphore bindSparseSemaphore{ VK_NULL_HANDLE };
 
 	VulkanExample();
 	~VulkanExample();
@@ -105,18 +103,14 @@ public:
 	void prepareSparseTexture(uint32_t width, uint32_t height, uint32_t layerCount, VkFormat format);
 	// @todo: move to dtor of texture
 	void destroyTextureImage(SparseTexture texture);
-	void buildCommandBuffers();
-	void draw();
+	void buildCommandBuffer();
 	void loadAssets();
-	void setupDescriptorPool();
-	void setupDescriptorSetLayout();
-	void setupDescriptorSet();
+	void setupDescriptors();
 	void preparePipelines();
 	void prepareUniformBuffers();
 	void updateUniformBuffers();
 	void prepare();
 	virtual void render();
-	virtual void viewChanged();
 	void uploadContent(VirtualTexturePage page, VkImage image);
 	void fillRandomPages();
 	void fillMipTail();

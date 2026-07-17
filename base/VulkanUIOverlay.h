@@ -1,7 +1,7 @@
 /*
 * UI overlay class using ImGui
 *
-* Copyright (C) 2017 by Sascha Willems - www.saschawillems.de
+* Copyright (C) 2017-2026 by Sascha Willems - www.saschawillems.de
 *
 * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
 */
@@ -28,52 +28,63 @@
 #include "VulkanAndroid.h"
 #endif
 
-namespace vks 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+
+namespace vks
 {
-	class UIOverlay 
+	class UIOverlay
 	{
 	public:
-		vks::VulkanDevice *device;
-		VkQueue queue;
+		vks::VulkanDevice* device{ nullptr };
+		VkQueue queue{ VK_NULL_HANDLE };
 
-		VkSampleCountFlagBits rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-		uint32_t subpass = 0;
+		VkSampleCountFlagBits rasterizationSamples{ VK_SAMPLE_COUNT_1_BIT };
+		uint32_t subpass{ 0 };
 
-		vks::Buffer vertexBuffer;
-		vks::Buffer indexBuffer;
-		int32_t vertexCount = 0;
-		int32_t indexCount = 0;
+		struct Buffers {
+			vks::Buffer vertexBuffer;
+			vks::Buffer indexBuffer;
+			int32_t vertexCount{ 0 };
+			int32_t indexCount{ 0 };
+		};
+		std::vector<Buffers> buffers;
+		uint32_t maxConcurrentFrames{ 0 };
+		uint32_t currentBuffer{ 0 };
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaders;
 
-		VkDescriptorPool descriptorPool;
-		VkDescriptorSetLayout descriptorSetLayout;
-		VkDescriptorSet descriptorSet;
-		VkPipelineLayout pipelineLayout;
-		VkPipeline pipeline;
+		VkDescriptorPool descriptorPool{ VK_NULL_HANDLE };
+		VkDescriptorSetLayout descriptorSetLayout{ VK_NULL_HANDLE };
+		VkDescriptorSet descriptorSet{ VK_NULL_HANDLE };
+		VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
+		VkPipeline pipeline{ VK_NULL_HANDLE };
 
-		VkDeviceMemory fontMemory = VK_NULL_HANDLE;
-		VkImage fontImage = VK_NULL_HANDLE;
-		VkImageView fontView = VK_NULL_HANDLE;
-		VkSampler sampler;
+		VkDeviceMemory fontMemory{ VK_NULL_HANDLE };
+		VkImage fontImage{ VK_NULL_HANDLE };
+		VkImageView fontView{ VK_NULL_HANDLE };
+		VkSampler sampler{ VK_NULL_HANDLE };
 
 		struct PushConstBlock {
 			glm::vec2 scale;
 			glm::vec2 translate;
 		} pushConstBlock;
 
-		bool visible = true;
-		bool updated = false;
-		float scale = 1.0f;
+		bool visible{ true };
+		float scale{ 1.0f };
+
+		VkRenderPass renderPass{ VK_NULL_HANDLE };
+		VkFormat colorFormat{ VK_FORMAT_UNDEFINED };
+		VkFormat depthFormat{ VK_FORMAT_UNDEFINED };
 
 		UIOverlay();
 		~UIOverlay();
 
-		void preparePipeline(const VkPipelineCache pipelineCache, const VkRenderPass renderPass, const VkFormat colorFormat, const VkFormat depthFormat);
-		void prepareResources();
+		void prepare();
 
-		bool update();
-		void draw(const VkCommandBuffer commandBuffer);
+		void update(uint32_t currentBuffer);
+		void draw(const VkCommandBuffer commandBuffer, uint32_t currentBuffer);
 		void resize(uint32_t width, uint32_t height);
 
 		void freeResources();

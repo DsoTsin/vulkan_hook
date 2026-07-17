@@ -14,10 +14,15 @@ android {
         }
         externalNativeBuild {
             cmake {
-                cppFlags "-std=c++14"
+                cppFlags "-std=c++20"
                 arguments "-DANDROID_STL=c++_static", '-DANDROID_TOOLCHAIN=clang', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
                 targets "native-lib", "mali_syshook"
             }
+        }
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
     sourceSets {
@@ -27,11 +32,6 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-    packaging {
-        jniLibs {
-            useLegacyPackaging = true
         }
     }
     externalNativeBuild {

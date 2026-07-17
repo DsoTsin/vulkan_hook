@@ -5,12 +5,7 @@
 *.suo
 *.user
 *.sln.docstates
-*.a
-.idea/
-.classpath
-.project
-.ycode/
-.settings/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -21,8 +16,7 @@ build/
 bld/
 [Bb]in/
 [Oo]bj/
-mali_syshook/build-android
-android/.idea/
+
 # CMake
 CMakeCache.txt
 CMakeFiles
@@ -240,3 +234,22 @@ data/textures/**
 data/README_asset_pack.md
 data/font*.*
 data/roboto*.*
+
+# Android Studio folders
+android/.idea/**
+
+# Eclipse/IDE and local tooling metadata
+.idea/
+.classpath
+.project
+.ycode/
+.settings/
+
+# Local Mali hook build output
+mali_syshook/build-android/
+
+libs/vulkan/*.so
+
+.vscode/*
+
+__pycache__**

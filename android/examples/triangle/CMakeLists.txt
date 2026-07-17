@@ -1,13 +1,14 @@
-cmake_minimum_required(VERSION 3.4.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
+
+
 
 set(NAME triangle)
 
 set(SRC_DIR ../../../examples/${NAME})
 set(BASE_DIR ../../../base)
 set(EXTERNAL_DIR ../../../external)
-set(MALI_SYSHOOK_DIR ../../../mali_syshook)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DVK_USE_PLATFORM_ANDROID_KHR -DVK_NO_PROTOTYPES")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -DVK_USE_PLATFORM_ANDROID_KHR -DVK_NO_PROTOTYPES")
 
 file(GLOB EXAMPLE_SRC "${SRC_DIR}/*.cpp")
 

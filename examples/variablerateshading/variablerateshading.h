@@ -1,7 +1,7 @@
 /*
 * Vulkan Example - Variable rate shading
 *
-* Copyright (C) 2020 by Sascha Willems - www.saschawillems.de
+* Copyright (C) 2020-2025 by Sascha Willems - www.saschawillems.de
 *
 * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
 */
@@ -9,15 +9,13 @@
 #include "vulkanexamplebase.h"
 #include "VulkanglTFModel.h"
 
-#define ENABLE_VALIDATION false
-
 class VulkanExample : public VulkanExampleBase
 {
 public:
 	vkglTF::Model scene;
 
 	struct ShadingRateImage {
-		VkImage image;
+		VkImage image{ VK_NULL_HANDLE };
 		VkDeviceMemory memory;
 		VkImageView view;
 	} shadingRateImage;
@@ -25,47 +23,46 @@ public:
 	bool enableShadingRate = true;
 	bool colorShadingRate = false;
 
-	struct ShaderData {
-		vks::Buffer buffer;
-		struct Values {
-			glm::mat4 projection;
-			glm::mat4 view;
-			glm::mat4 model = glm::mat4(1.0f);
-			glm::vec4 lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
-			glm::vec4 viewPos;
-			int32_t colorShadingRate;
-		} values;
-	} shaderData;
+	struct UniformData {
+		glm::mat4 projection;
+		glm::mat4 view;
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::vec4 lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
+		glm::vec4 viewPos;
+		int32_t colorShadingRate;
+	} uniformData;
+	std::array<vks::Buffer, maxConcurrentFrames> uniformBuffers;
 
 	struct Pipelines {
-		VkPipeline opaque;
-		VkPipeline masked;
-	};
+		VkPipeline opaque{ VK_NULL_HANDLE };
+		VkPipeline masked{ VK_NULL_HANDLE };
+	} pipelines;
 
-	Pipelines basePipelines;
-	Pipelines shadingRatePipelines;
+	VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
+	VkDescriptorSetLayout descriptorSetLayout{ VK_NULL_HANDLE };
+	std::array<VkDescriptorSet, maxConcurrentFrames> descriptorSets{};
 
-	VkPipelineLayout pipelineLayout;
-	VkDescriptorSet descriptorSet;
-	VkDescriptorSetLayout descriptorSetLayout;
+	VkPhysicalDeviceFragmentShadingRatePropertiesKHR physicalDeviceShadingRateImageProperties{};
+	VkPhysicalDeviceFragmentShadingRateFeaturesKHR enabledPhysicalDeviceShadingRateImageFeaturesKHR{};
 
-	VkPhysicalDeviceShadingRateImagePropertiesNV physicalDeviceShadingRateImagePropertiesNV{};
-	VkPhysicalDeviceShadingRateImageFeaturesNV enabledPhysicalDeviceShadingRateImageFeaturesNV{};
-	PFN_vkCmdBindShadingRateImageNV vkCmdBindShadingRateImageNV;
+	PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR vkGetPhysicalDeviceFragmentShadingRatesKHR{ nullptr };
+	PFN_vkCmdSetFragmentShadingRateKHR vkCmdSetFragmentShadingRateKHR{ nullptr };
+	PFN_vkCreateRenderPass2KHR vkCreateRenderPass2KHR{ nullptr };
 
 	VulkanExample();
 	~VulkanExample();
-	virtual void getEnabledFeatures();
+	virtual void getEnabledFeatures() override;
 	void handleResize();
-	void buildCommandBuffers();
-	void loadglTFFile(std::string filename);
+	void buildCommandBuffer();
 	void loadAssets();
 	void prepareShadingRateImage();
 	void setupDescriptors();
 	void preparePipelines();
 	void prepareUniformBuffers();
 	void updateUniformBuffers();
-	void prepare();
-	virtual void render();
-	virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay);
+	void prepare() override;
+	void setupFrameBuffer() override;
+	void setupRenderPass() override;
+	virtual void render() override;
+	virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay) override;
 };

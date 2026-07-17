@@ -44,7 +44,7 @@
 #define KEY_SPACE 0x3E		// AKEYCODE_SPACE
 #define KEY_KPADD 0x9D		// AKEYCODE_NUMPAD_ADD
 
-#elif (defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK))
+#elif (defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK) || defined(VK_USE_PLATFORM_METAL_EXT))
 #if !defined(VK_EXAMPLE_XCODE_GENERATED)
 // For iOS and macOS pre-configured Xcode example project: Use character keycodes
 // - Use numeric keys as optional alternative to function keys
@@ -157,4 +157,28 @@
 #define KEY_N 0x39
 #define KEY_O 0x20
 #define KEY_T 0x1C
+
+#elif defined(VK_USE_PLATFORM_SCREEN_QNX)
+#include <sys/keycodes.h>
+
+#define KEY_ESCAPE KEYCODE_ESCAPE
+#define KEY_F1     KEYCODE_F1
+#define KEY_F2     KEYCODE_F2
+#define KEY_F3     KEYCODE_F3
+#define KEY_F4     KEYCODE_F4
+#define KEY_W      KEYCODE_W
+#define KEY_A      KEYCODE_A
+#define KEY_S      KEYCODE_S
+#define KEY_D      KEYCODE_D
+#define KEY_P      KEYCODE_P
+#define KEY_SPACE  KEYCODE_SPACE
+#define KEY_KPADD  KEYCODE_KP_PLUS
+#define KEY_KPSUB  KEYCODE_KP_MINUS
+#define KEY_B      KEYCODE_B
+#define KEY_F      KEYCODE_F
+#define KEY_L      KEYCODE_L
+#define KEY_N      KEYCODE_N
+#define KEY_O      KEYCODE_O
+#define KEY_T      KEYCODE_T
+
 #endif

@@ -1,7 +1,7 @@
 /*
 * Vulkan Example - Using VK_EXT_graphics_pipeline_library
-* 
-* Copyright (C) 2022 by Sascha Willems - www.saschawillems.de
+*
+* Copyright (C) 2022-2025 by Sascha Willems - www.saschawillems.de
 *
 * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
 */
@@ -11,8 +11,6 @@
 #include <thread>
 #include <mutex>
 
-#define ENABLE_VALIDATION false
-
 class VulkanExample: public VulkanExampleBase
 {
 public:
@@ -20,16 +18,16 @@ public:
 
 	vkglTF::Model scene;
 
-	struct UBOVS {
+	struct UniformData {
 		glm::mat4 projection;
 		glm::mat4 modelView;
 		glm::vec4 lightPos = glm::vec4(0.0f, -2.0f, 1.0f, 0.0f);
-	} uboVS;
-	vks::Buffer uniformBuffer;
+	} uniformData;
+	std::array<vks::Buffer, maxConcurrentFrames> uniformBuffers;
 
-	VkPipelineLayout pipelineLayout;
-	VkDescriptorSet descriptorSet;
-	VkDescriptorSetLayout descriptorSetLayout;
+	VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
+	VkDescriptorSetLayout descriptorSetLayout{ VK_NULL_HANDLE };
+	std::array<VkDescriptorSet, maxConcurrentFrames> descriptorSets{};
 
 	VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT graphicsPipelineLibraryFeatures{};
 
@@ -58,7 +56,7 @@ public:
 	std::vector<glm::vec3> colors{};
 	float rotation{ 0.0f };
 
-	VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION)
+	VulkanExample() : VulkanExampleBase()
 	{
 		title = "Graphics pipeline library";
 		camera.type = Camera::CameraType::lookat;
@@ -92,74 +90,9 @@ public:
 			vkDestroyPipelineCache(device, threadPipelineCache, nullptr);
 			vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 			vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-			uniformBuffer.destroy();
-		}
-	}
-
-	void buildCommandBuffers()
-	{
-		VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
-
-		VkClearValue clearValues[2];
-		clearValues[0].color = defaultClearColor;
-		clearValues[1].depthStencil = { 1.0f, 0 };
-
-		VkRenderPassBeginInfo renderPassBeginInfo = vks::initializers::renderPassBeginInfo();
-		renderPassBeginInfo.renderPass = renderPass;
-		renderPassBeginInfo.renderArea.offset.x = 0;
-		renderPassBeginInfo.renderArea.offset.y = 0;
-		renderPassBeginInfo.renderArea.extent.width = width;
-		renderPassBeginInfo.renderArea.extent.height = height;
-		renderPassBeginInfo.clearValueCount = 2;
-		renderPassBeginInfo.pClearValues = clearValues;
-
-		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
-		{
-			renderPassBeginInfo.framebuffer = frameBuffers[i];
-
-			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
-
-			vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
-			scene.bindBuffers(drawCmdBuffers[i]);
-
-			// Render a viewport for each pipeline
-			float w = (float)width / (float)splitX;
-			float h = (float)height / (float)splitY;
-			uint32_t idx = 0;
-			for (uint32_t y = 0; y < splitX; y++) {
-				for (uint32_t x = 0; x < splitY; x++) {
-					VkViewport viewport{};
-					viewport.x = w * (float)x;
-					viewport.y = h * (float)y;
-					viewport.width = w;
-					viewport.height = h;
-					viewport.minDepth = 0.0f;
-					viewport.maxDepth = 1.0f;
-					vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
-
-					VkRect2D scissor{};
-					scissor.extent.width = (uint32_t)w;
-					scissor.extent.height = (uint32_t)h;
-					scissor.offset.x = (uint32_t)w * x;
-					scissor.offset.y = (uint32_t)h * y;
-					vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
-
-					if (pipelines.size() > idx) {
-						vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[idx]);
-						scene.draw(drawCmdBuffers[i]);
-					}
-
-					idx++;
-				}
+			for (auto& buffer : uniformBuffers) {
+				buffer.destroy();
 			}
-
-			drawUI(drawCmdBuffers[i]);
-
-			vkCmdEndRenderPass(drawCmdBuffers[i]);
-
-			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
 		}
 	}
 
@@ -169,36 +102,31 @@ public:
 		scene.loadFromFile(getAssetPath() + "models/color_teapot_spheres.gltf", vulkanDevice, queue, glTFLoadingFlags);
 	}
 
-	void setupDescriptorPool()
+	void setupDescriptors()
 	{
+		// Pool
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1)
+			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxConcurrentFrames)
 		};
-		VkDescriptorPoolCreateInfo descriptorPoolInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, 2);
+		VkDescriptorPoolCreateInfo descriptorPoolInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, maxConcurrentFrames);
 		VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolInfo, nullptr, &descriptorPool));
-	}
 
-	void setupDescriptorSetLayout()
-	{
+		// Layout
 		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0)
 		};
 		VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
 		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorLayout, nullptr, &descriptorSetLayout));
 
-		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
-		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayout));
-	}
-
-	void setupDescriptorSet()
-	{
+		// Sets per frame, just like the buffers themselves
 		VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayout, 1);
-		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet));
-
-		std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
-			vks::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &uniformBuffer.descriptor)
+		for (auto i = 0; i < uniformBuffers.size(); i++) {
+			VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets[i]));
+			std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
+				vks::initializers::writeDescriptorSet(descriptorSets[i], VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &uniformBuffers[i].descriptor),
+			};
+			vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 		};
-		vkUpdateDescriptorSets(device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
 	}
 
 	// With VK_EXT_graphics_pipeline_library we don't need to create the shader module when loading it, but instead have the driver create it at linking time
@@ -207,16 +135,16 @@ public:
 	{
 #if defined(__ANDROID__)
 		// Load shader from compressed asset
-		// @todo
-		AAsset* asset = AAssetManager_open(androidApp->activity->assetManager, fileName, AASSET_MODE_STREAMING);
+		AAsset* asset = AAssetManager_open(androidApp->activity->assetManager, fileName.c_str(), AASSET_MODE_STREAMING);
 		assert(asset);
 		size_t size = AAsset_getLength(asset);
 		assert(size > 0);
 
 		shaderInfo.size = size;
 		shaderInfo.code = new uint32_t[size / 4];
-		AAsset_read(asset, shaderCode, size);
+		AAsset_read(asset, reinterpret_cast<char*>(shaderInfo.code), size);
 		AAsset_close(asset);
+		return true;
 #else
 		std::ifstream is(fileName, std::ios::binary | std::ios::in | std::ios::ate);
 
@@ -239,94 +167,108 @@ public:
 	// Create the shared pipeline parts up-front
 	void preparePipelineLibrary()
 	{
+		// Shared layout
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&descriptorSetLayout, 1);
+		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
+
 		// Create a pipeline library for the vertex input interface
 		{
-			VkGraphicsPipelineLibraryCreateInfoEXT libraryInfo{};
-			libraryInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT;
-			libraryInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT;
+			VkGraphicsPipelineLibraryCreateInfoEXT libraryInfo{
+				.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT,
+				.flags = VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT
+			};
 
 			VkPipelineVertexInputStateCreateInfo vertexInputState = *vkglTF::Vertex::getPipelineVertexInputState({ vkglTF::VertexComponent::Position, vkglTF::VertexComponent::Normal, vkglTF::VertexComponent::Color });
 			VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = vks::initializers::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 
-			VkGraphicsPipelineCreateInfo pipelineLibraryCI{};
-			pipelineLibraryCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-			pipelineLibraryCI.flags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
-			pipelineLibraryCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-			pipelineLibraryCI.pNext = &libraryInfo;
-			pipelineLibraryCI.pInputAssemblyState = &inputAssemblyState;
-			pipelineLibraryCI.pVertexInputState = &vertexInputState;
+			VkGraphicsPipelineCreateInfo pipelineLibraryCI{
+				.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+				.pNext = &libraryInfo,
+				.flags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT,
+				.pVertexInputState = &vertexInputState,
+				.pInputAssemblyState = &inputAssemblyState,
+			};
 			VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineLibraryCI, nullptr, &pipelineLibrary.vertexInputInterface));
 		}
 
 		// Creata a pipeline library for the vertex shader stage
 		{
-			VkGraphicsPipelineLibraryCreateInfoEXT libraryInfo{};
-			libraryInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT;
-			libraryInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT;
-
 			VkDynamicState vertexDynamicStates[2] = {
 				VK_DYNAMIC_STATE_VIEWPORT,
 				VK_DYNAMIC_STATE_SCISSOR };
 
-			VkPipelineDynamicStateCreateInfo dynamicInfo{};
-			dynamicInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-			dynamicInfo.dynamicStateCount = 2;
-			dynamicInfo.pDynamicStates = vertexDynamicStates;
+			VkPipelineDynamicStateCreateInfo dynamicInfo{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+				.dynamicStateCount = 2,
+				.pDynamicStates = vertexDynamicStates
+			};
 
-			VkPipelineViewportStateCreateInfo viewportState = {};
-			viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-			viewportState.viewportCount = 1;
-			viewportState.scissorCount = 1;
+			VkPipelineViewportStateCreateInfo viewportState{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+				.viewportCount = 1,
+				.scissorCount = 1
+			};
 
 			VkPipelineRasterizationStateCreateInfo rasterizationState = vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
 
-			// @todo: we can skip the pipeline shader module info and directly consume the shader module
 			ShaderInfo shaderInfo{};
 			loadShaderFile(getShadersPath() + "graphicspipelinelibrary/shared.vert.spv", shaderInfo);
 
-			VkShaderModuleCreateInfo shaderModuleCI{};
-			shaderModuleCI.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			shaderModuleCI.codeSize = shaderInfo.size;
-			shaderModuleCI.pCode = shaderInfo.code;
+			VkShaderModuleCreateInfo shaderModuleCI{
+				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+				.codeSize = shaderInfo.size,
+				.pCode = shaderInfo.code
+			};
 
-			VkPipelineShaderStageCreateInfo shaderStageCI{};
-			shaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			shaderStageCI.pNext = &shaderModuleCI;
-			shaderStageCI.stage = VK_SHADER_STAGE_VERTEX_BIT;
-			shaderStageCI.pName = "main";
+			VkPipelineShaderStageCreateInfo shaderStageCI{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.pNext = &shaderModuleCI,
+				.stage = VK_SHADER_STAGE_VERTEX_BIT,
+				.pName = "main"
+			};
 
-			VkGraphicsPipelineCreateInfo pipelineLibraryCI{};
-			pipelineLibraryCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-			pipelineLibraryCI.pNext = &libraryInfo;
-			pipelineLibraryCI.renderPass = renderPass;
-			pipelineLibraryCI.flags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
-			pipelineLibraryCI.stageCount = 1;
-			pipelineLibraryCI.pStages = &shaderStageCI;
-			pipelineLibraryCI.layout = pipelineLayout;
-			pipelineLibraryCI.pDynamicState = &dynamicInfo;
-			pipelineLibraryCI.pViewportState = &viewportState;
-			pipelineLibraryCI.pRasterizationState = &rasterizationState;
+			VkGraphicsPipelineLibraryCreateInfoEXT libraryInfo{
+				.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT,
+				.flags = VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT
+			};
+
+			VkGraphicsPipelineCreateInfo pipelineLibraryCI{
+				.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+				.pNext = &libraryInfo,
+				.flags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT,
+				.stageCount = 1,
+				.pStages = &shaderStageCI,
+				.pViewportState = &viewportState,
+				.pRasterizationState = &rasterizationState,
+				.pDynamicState = &dynamicInfo,
+				.layout = pipelineLayout,
+				.renderPass = renderPass,
+			};
 			VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineLibraryCI, nullptr, &pipelineLibrary.preRasterizationShaders));
+
+			delete[] shaderInfo.code;
 		}
 
 		// Create a pipeline library for the fragment output interface
 		{
-			VkGraphicsPipelineLibraryCreateInfoEXT libraryInfo{};
-			libraryInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT;
-			libraryInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT;
+			VkGraphicsPipelineLibraryCreateInfoEXT libraryInfo{
+				.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT,
+				.flags = VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT
+			};
 
 			VkPipelineColorBlendAttachmentState  blendAttachmentSstate = vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
 			VkPipelineColorBlendStateCreateInfo  colorBlendState = vks::initializers::pipelineColorBlendStateCreateInfo(1, &blendAttachmentSstate);
 			VkPipelineMultisampleStateCreateInfo multisampleState = vks::initializers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
 
-			VkGraphicsPipelineCreateInfo pipelineLibraryCI{};
-			pipelineLibraryCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-			pipelineLibraryCI.pNext = &libraryInfo;
-			pipelineLibraryCI.layout = pipelineLayout;
-			pipelineLibraryCI.renderPass = renderPass;
-			pipelineLibraryCI.flags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
-			pipelineLibraryCI.pColorBlendState = &colorBlendState;
-			pipelineLibraryCI.pMultisampleState = &multisampleState;
+			VkGraphicsPipelineCreateInfo pipelineLibraryCI{
+				.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+				.pNext = &libraryInfo,
+				.flags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT,
+				.pMultisampleState = &multisampleState,
+				.pColorBlendState = &colorBlendState,
+				.layout = pipelineLayout,
+				.renderPass = renderPass
+			};
 			VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineLibraryCI, nullptr, &pipelineLibrary.fragmentOutputInterface));
 		}
 	}
@@ -355,9 +297,10 @@ public:
 	void prepareNewPipeline()
 	{
 		// Create the fragment shader part of the pipeline library with some random options
-		VkGraphicsPipelineLibraryCreateInfoEXT libraryInfo{};
-		libraryInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT;
-		libraryInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT;
+		VkGraphicsPipelineLibraryCreateInfoEXT libraryInfo{
+			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT,
+			.flags = VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT
+		};
 
 		VkPipelineDepthStencilStateCreateInfo depthStencilState = vks::initializers::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
 		VkPipelineMultisampleStateCreateInfo  multisampleState = vks::initializers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
@@ -366,44 +309,49 @@ public:
 		ShaderInfo shaderInfo{};
 		loadShaderFile(getShadersPath() + "graphicspipelinelibrary/uber.frag.spv", shaderInfo);
 
-		VkShaderModuleCreateInfo shaderModuleCI{};
-		shaderModuleCI.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		shaderModuleCI.codeSize = shaderInfo.size;
-		shaderModuleCI.pCode = shaderInfo.code;
+		VkShaderModuleCreateInfo shaderModuleCI{
+			.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+			.codeSize = shaderInfo.size,
+			.pCode = shaderInfo.code
+		};
 
-		VkPipelineShaderStageCreateInfo shaderStageCI{};
-		shaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageCI.pNext = &shaderModuleCI;
-		shaderStageCI.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shaderStageCI.pName = "main";
+		VkPipelineShaderStageCreateInfo shaderStageCI{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			.pNext = &shaderModuleCI,
+			.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.pName = "main"
+		};
 
 		// Select lighting model using a specialization constant
-		srand((unsigned int)time(NULL));
+		srand(benchmark.active ? 0 : ((unsigned int)time(NULL)));
 		uint32_t lighting_model = (int)(rand() % 4);
 
 		// Each shader constant of a shader stage corresponds to one map entry
-		VkSpecializationMapEntry specializationMapEntry{};
-		specializationMapEntry.constantID = 0;
-		specializationMapEntry.size = sizeof(uint32_t);
+		VkSpecializationMapEntry specializationMapEntry{
+			.constantID = 0,
+			.size = sizeof(uint32_t)
+		};
 
-		VkSpecializationInfo specializationInfo{};
-		specializationInfo.mapEntryCount = 1;
-		specializationInfo.pMapEntries = &specializationMapEntry;
-		specializationInfo.dataSize = sizeof(uint32_t);
-		specializationInfo.pData = &lighting_model;
+		VkSpecializationInfo specializationInfo{
+		.mapEntryCount = 1,
+		.pMapEntries = &specializationMapEntry,
+		.dataSize = sizeof(uint32_t),
+		.pData = &lighting_model
+		};
 
 		shaderStageCI.pSpecializationInfo = &specializationInfo;
 
-		VkGraphicsPipelineCreateInfo pipelineCI{};
-		pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineCI.pNext = &libraryInfo;
-		pipelineCI.flags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
-		pipelineCI.stageCount = 1;
-		pipelineCI.pStages = &shaderStageCI;
-		pipelineCI.layout = pipelineLayout;
-		pipelineCI.renderPass = renderPass;
-		pipelineCI.pDepthStencilState = &depthStencilState;
-		pipelineCI.pMultisampleState = &multisampleState;
+		VkGraphicsPipelineCreateInfo pipelineCI{
+			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+			.pNext = &libraryInfo,
+			.flags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT,
+			.stageCount = 1,
+			.pStages = &shaderStageCI,
+			.pMultisampleState = &multisampleState,
+			.pDepthStencilState = &depthStencilState,
+			.layout = pipelineLayout,
+			.renderPass = renderPass,
+		};
 		VkPipeline fragmentShader = VK_NULL_HANDLE;
 		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, threadPipelineCache, 1, &pipelineCI, nullptr, &fragmentShader));
 
@@ -416,19 +364,21 @@ public:
 			pipelineLibrary.fragmentOutputInterface };
 
 		// Link the library parts into a graphics pipeline
-		VkPipelineLibraryCreateInfoKHR pipelineLibraryCI{};
-		pipelineLibraryCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR;
-		pipelineLibraryCI.libraryCount = static_cast<uint32_t>(libraries.size());
-		pipelineLibraryCI.pLibraries = libraries.data();
+		VkPipelineLibraryCreateInfoKHR pipelineLibraryCI{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,
+			.libraryCount = static_cast<uint32_t>(libraries.size()),
+			.pLibraries = libraries.data()
+		};
 
 		// If set to true, we pass VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT which will let the implementation do additional optimizations at link time
 		// This trades in pipeline creation time for run-time performance
 		bool optimized = true;
 
-		VkGraphicsPipelineCreateInfo executablePipelineCI{};
-		executablePipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		executablePipelineCI.pNext = &pipelineLibraryCI;
-		executablePipelineCI.layout = pipelineLayout;
+		VkGraphicsPipelineCreateInfo executablePipelineCI{
+			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+			.pNext = &pipelineLibraryCI,
+			.layout = pipelineLayout
+		};
 		if (linkTimeOptimization)
 		{
 			// If link time optimization is activated in the UI, we set the VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT flag which will let the implementation do additional optimizations at link time
@@ -442,22 +392,17 @@ public:
 		pipelines.push_back(executable);
 		// Push fragment shader to list for deletion in the sample's destructor
 		pipelineLibrary.fragmentShaders.push_back(fragmentShader);
+
+		delete[] shaderInfo.code;
 	}
 
 	// Prepare and initialize uniform buffer containing shader uniforms
 	void prepareUniformBuffers()
 	{
-		// Create the vertex shader uniform buffer block
-		VK_CHECK_RESULT(vulkanDevice->createBuffer(
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			&uniformBuffer,
-			sizeof(uboVS)));
-
-		// Map persistent
-		VK_CHECK_RESULT(uniformBuffer.map());
-
-		updateUniformBuffers();
+		for (auto& buffer : uniformBuffers) {
+			VK_CHECK_RESULT(vulkanDevice->createBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer, sizeof(UniformData), &uniformData));
+			VK_CHECK_RESULT(buffer.map());
+		}
 	}
 
 	void updateUniformBuffers()
@@ -466,20 +411,9 @@ public:
 			rotation += frameTimer * 0.1f;
 		}
 		camera.setPerspective(45.0f, ((float)width / (float)splitX) / ((float)height / (float)splitY), 0.1f, 256.0f);
-		uboVS.projection = camera.matrices.perspective;
-		uboVS.modelView = camera.matrices.view * glm::rotate(glm::mat4(1.0f), glm::radians(rotation * 360.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		memcpy(uniformBuffer.mapped, &uboVS, sizeof(uboVS));
-	}
-
-	void draw()
-	{
-		VulkanExampleBase::prepareFrame();
-
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		VulkanExampleBase::submitFrame();
+		uniformData.projection = camera.matrices.perspective;
+		uniformData.modelView = camera.matrices.view * glm::rotate(glm::mat4(1.0f), glm::radians(rotation * 360.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		memcpy(uniformBuffers[currentBuffer].mapped, &uniformData, sizeof(UniformData));
 	}
 
 	void prepare()
@@ -487,11 +421,8 @@ public:
 		VulkanExampleBase::prepare();
 		loadAssets();
 		prepareUniformBuffers();
-		setupDescriptorSetLayout();
+		setupDescriptors();
 		preparePipelineLibrary();
-		setupDescriptorPool();
-		setupDescriptorSet();
-		buildCommandBuffers();
 
 		// Create a separate pipeline cache for the pipeline creation thread
 		VkPipelineCacheCreateInfo pipelineCachCI = {};
@@ -500,23 +431,95 @@ public:
 
 		// Create first pipeline using a background thread
 		std::thread pipelineGenerationThread(&VulkanExample::threadFn, this);
-		pipelineGenerationThread.detach();
+
+		// Stall in benchmark mode until pipeline creation is finished to measure work more consistently
+		if (benchmark.active) {
+			pipelineGenerationThread.join();
+		} else {
+			pipelineGenerationThread.detach();
+		}
 
 		prepared = true;
 	}
+
+	void buildCommandBuffer()
+	{
+		VkCommandBuffer cmdBuffer = drawCmdBuffers[currentBuffer];
+
+		VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
+
+		VkClearValue clearValues[2]{};
+		clearValues[0].color = defaultClearColor;
+		clearValues[1].depthStencil = { 1.0f, 0 };
+
+		VkRenderPassBeginInfo renderPassBeginInfo{
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+			.renderPass = renderPass,
+			.framebuffer = frameBuffers[currentImageIndex],
+			.renderArea = {.offset = {.x = 0, .y = 0 }, .extent = {.width = width, .height = height } },
+			.clearValueCount = 2,
+			.pClearValues = clearValues,
+		};
+
+		VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo));
+
+		vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentBuffer], 0, nullptr);
+		scene.bindBuffers(cmdBuffer);
+
+		// Render a viewport for each pipeline
+		float w = (float)width / (float)splitX;
+		float h = (float)height / (float)splitY;
+		uint32_t idx = 0;
+		for (uint32_t y = 0; y < splitX; y++) {
+			for (uint32_t x = 0; x < splitY; x++) {
+				VkViewport viewport{};
+				viewport.x = w * (float)x;
+				viewport.y = h * (float)y;
+				viewport.width = w;
+				viewport.height = h;
+				viewport.minDepth = 0.0f;
+				viewport.maxDepth = 1.0f;
+				vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+				VkRect2D scissor{};
+				scissor.extent.width = (uint32_t)w;
+				scissor.extent.height = (uint32_t)h;
+				scissor.offset.x = (uint32_t)w * x;
+				scissor.offset.y = (uint32_t)h * y;
+				vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+				if (pipelines.size() > idx) {
+					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[idx]);
+					scene.draw(cmdBuffer);
+				}
+
+				idx++;
+			}
+		}
+
+		drawUI(cmdBuffer);
+
+		vkCmdEndRenderPass(cmdBuffer);
+
+		VK_CHECK_RESULT(vkEndCommandBuffer(cmdBuffer));
+	}
+
 
 	virtual void render()
 	{
 		if (!prepared)
 			return;
-		if (newPipelineCreated)
-		{
-			newPipelineCreated = false;
-			vkQueueWaitIdle(queue);
-			buildCommandBuffers();
-		}
-		draw();
+		VulkanExampleBase::prepareFrame();
 		updateUniformBuffers();
+		if (newPipelineCreated) {
+			// Make sure no work is pending before using the newly created pipeline
+			vkQueueWaitIdle(queue);
+			newPipelineCreated = false;
+		}
+		buildCommandBuffer();
+		VulkanExampleBase::submitFrame();
 	}
 
 	virtual void OnUpdateUIOverlay(vks::UIOverlay *overlay)

@@ -151,18 +151,9 @@ namespace vks
 			return fenceCreateInfo;
 		}
 
-		inline VkEventCreateInfo eventCreateInfo()
-		{
-			VkEventCreateInfo eventCreateInfo {};
-			eventCreateInfo.sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO;
-			return eventCreateInfo;
-		}
-
 		inline VkSubmitInfo submitInfo()
 		{
-			VkSubmitInfo submitInfo {};
-			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-			return submitInfo;
+			return { .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO };
 		}
 
 		inline VkViewport viewport(

@@ -1,7 +1,7 @@
 /*
 * Vulkan Example - Scene rendering
 *
-* Copyright (C) 2020-202- by Sascha Willems - www.saschawillems.de
+* Copyright (C) 2020-2025 by Sascha Willems - www.saschawillems.de
 *
 * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
 *
@@ -284,7 +284,7 @@ void VulkanglTFScene::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipel
 	Vulkan Example class
 */
 
-VulkanExample::VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION)
+VulkanExample::VulkanExample() : VulkanExampleBase()
 {
 	title = "glTF scene rendering";
 	camera.type = Camera::CameraType::firstperson;
@@ -296,55 +296,19 @@ VulkanExample::VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION)
 
 VulkanExample::~VulkanExample()
 {
-	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-	vkDestroyDescriptorSetLayout(device, descriptorSetLayouts.matrices, nullptr);
-	vkDestroyDescriptorSetLayout(device, descriptorSetLayouts.textures, nullptr);
-	shaderData.buffer.destroy();
+	if (device) {
+		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+		vkDestroyDescriptorSetLayout(device, descriptorSetLayouts.matrices, nullptr);
+		vkDestroyDescriptorSetLayout(device, descriptorSetLayouts.textures, nullptr);
+		for (auto& buffer : uniformBuffers) {
+			buffer.destroy();
+		}
+	}
 }
 
 void VulkanExample::getEnabledFeatures()
 {
 	enabledFeatures.samplerAnisotropy = deviceFeatures.samplerAnisotropy;
-}
-
-void VulkanExample::buildCommandBuffers()
-{
-	VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
-
-	VkClearValue clearValues[2];
-	clearValues[0].color = defaultClearColor;
-	clearValues[0].color = { { 0.25f, 0.25f, 0.25f, 1.0f } };;
-	clearValues[1].depthStencil = { 1.0f, 0 };
-
-	VkRenderPassBeginInfo renderPassBeginInfo = vks::initializers::renderPassBeginInfo();
-	renderPassBeginInfo.renderPass = renderPass;
-	renderPassBeginInfo.renderArea.offset.x = 0;
-	renderPassBeginInfo.renderArea.offset.y = 0;
-	renderPassBeginInfo.renderArea.extent.width = width;
-	renderPassBeginInfo.renderArea.extent.height = height;
-	renderPassBeginInfo.clearValueCount = 2;
-	renderPassBeginInfo.pClearValues = clearValues;
-
-	const VkViewport viewport = vks::initializers::viewport((float)width, (float)height, 0.0f, 1.0f);
-	const VkRect2D scissor = vks::initializers::rect2D(width, height, 0, 0);
-
-	for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
-	{
-		renderPassBeginInfo.framebuffer = frameBuffers[i];
-		VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
-		vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
-		vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
-		// Bind scene matrices descriptor to set 0
-		vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-
-		// POI: Draw the glTF scene
-		glTFScene.draw(drawCmdBuffers[i], pipelineLayout);
-
-		drawUI(drawCmdBuffers[i]);
-		vkCmdEndRenderPass(drawCmdBuffers[i]);
-		VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
-	}
 }
 
 void VulkanExample::loadglTFFile(std::string filename)
@@ -395,26 +359,21 @@ void VulkanExample::loadglTFFile(std::string filename)
 	size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
 	glTFScene.indices.count = static_cast<uint32_t>(indexBuffer.size());
 
-	struct StagingBuffer {
-		VkBuffer buffer;
-		VkDeviceMemory memory;
-	} vertexStaging, indexStaging;
+	vks::Buffer vertexStaging, indexStaging;
 
 	// Create host visible staging buffers (source)
 	VK_CHECK_RESULT(vulkanDevice->createBuffer(
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		&vertexStaging,
 		vertexBufferSize,
-		&vertexStaging.buffer,
-		&vertexStaging.memory,
 		vertexBuffer.data()));
 	// Index data
 	VK_CHECK_RESULT(vulkanDevice->createBuffer(
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		&indexStaging,
 		indexBufferSize,
-		&indexStaging.buffer,
-		&indexStaging.memory,
 		indexBuffer.data()));
 
 	// Create device local buffers (target)
@@ -453,11 +412,8 @@ void VulkanExample::loadglTFFile(std::string filename)
 
 	vulkanDevice->flushCommandBuffer(copyCmd, queue, true);
 
-	// Free staging resources
-	vkDestroyBuffer(device, vertexStaging.buffer, nullptr);
-	vkFreeMemory(device, vertexStaging.memory, nullptr);
-	vkDestroyBuffer(device, indexStaging.buffer, nullptr);
-	vkFreeMemory(device, indexStaging.memory, nullptr);
+	vertexStaging.destroy();
+	indexStaging.destroy();
 }
 
 void VulkanExample::loadAssets()
@@ -474,11 +430,11 @@ void VulkanExample::setupDescriptors()
 	// One ubo to pass dynamic data to the shader
 	// Two combined image samplers per material as each material uses color and normal maps
 	std::vector<VkDescriptorPoolSize> poolSizes = {
-		vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
-		vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(glTFScene.materials.size()) * 2),
+		vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxConcurrentFrames),
+		vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(glTFScene.materials.size()) * 2 * maxConcurrentFrames),
 	};
 	// One set for matrices and one per model image/texture
-	const uint32_t maxSetCount = static_cast<uint32_t>(glTFScene.images.size()) + 1;
+	const uint32_t maxSetCount = static_cast<uint32_t>(glTFScene.images.size()) + maxConcurrentFrames;
 	VkDescriptorPoolCreateInfo descriptorPoolInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, maxSetCount);
 	VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolInfo, nullptr, &descriptorPool));
 
@@ -501,23 +457,15 @@ void VulkanExample::setupDescriptors()
 	descriptorSetLayoutCI.bindingCount = 2;
 	VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.textures));
 
-	// Pipeline layout using both descriptor sets (set 0 = matrices, set 1 = material)
-	std::array<VkDescriptorSetLayout, 2> setLayouts = { descriptorSetLayouts.matrices, descriptorSetLayouts.textures };
-	VkPipelineLayoutCreateInfo pipelineLayoutCI = vks::initializers::pipelineLayoutCreateInfo(setLayouts.data(), static_cast<uint32_t>(setLayouts.size()));
-	// We will use push constants to push the local matrices of a primitive to the vertex shader
-	VkPushConstantRange pushConstantRange = vks::initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0);
-	// Push constant ranges are part of the pipeline layout
-	pipelineLayoutCI.pushConstantRangeCount = 1;
-	pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
-	VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &pipelineLayout));
+	// Descriptor set for scene matrices per frame, just like the buffers themselves
+	for (auto i = 0; i < uniformBuffers.size(); i++) {
+		VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayouts.matrices, 1);
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets[i]));
+		VkWriteDescriptorSet writeDescriptorSet = vks::initializers::writeDescriptorSet(descriptorSets[i], VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &uniformBuffers[i].descriptor);
+		vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+	}
 
-	// Descriptor set for scene matrices
-	VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayouts.matrices, 1);
-	VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet));
-	VkWriteDescriptorSet writeDescriptorSet = vks::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &shaderData.buffer.descriptor);
-	vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
-
-	// Descriptor sets for materials
+	// Descriptor sets for materials, since they only use static images, no need to duplicate them per frame		
 	for (auto& material : glTFScene.materials) {
 		const VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayouts.textures, 1);
 		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &material.descriptorSet));
@@ -533,6 +481,18 @@ void VulkanExample::setupDescriptors()
 
 void VulkanExample::preparePipelines()
 {
+	// Layout
+	// Pipeline layout uses both descriptor sets (set 0 = matrices, set 1 = material)
+	std::array<VkDescriptorSetLayout, 2> setLayouts = { descriptorSetLayouts.matrices, descriptorSetLayouts.textures };
+	VkPipelineLayoutCreateInfo pipelineLayoutCI = vks::initializers::pipelineLayoutCreateInfo(setLayouts.data(), static_cast<uint32_t>(setLayouts.size()));
+	// We will use push constants to push the local matrices of a primitive to the vertex shader
+	VkPushConstantRange pushConstantRange = vks::initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0);
+	// Push constant ranges are part of the pipeline layout
+	pipelineLayoutCI.pushConstantRangeCount = 1;
+	pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
+	VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &pipelineLayout));
+
+	// Pipelines
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI = vks::initializers::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 	VkPipelineRasterizationStateCreateInfo rasterizationStateCI = vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
 	VkPipelineColorBlendAttachmentState blendAttachmentStateCI = vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
@@ -542,7 +502,7 @@ void VulkanExample::preparePipelines()
 	VkPipelineMultisampleStateCreateInfo multisampleStateCI = vks::initializers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
 	const std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 	VkPipelineDynamicStateCreateInfo dynamicStateCI = vks::initializers::pipelineDynamicStateCreateInfo(dynamicStateEnables.data(), static_cast<uint32_t>(dynamicStateEnables.size()), 0);
-	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 
 	const std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
 		vks::initializers::vertexInputBindingDescription(0, sizeof(VulkanglTFScene::Vertex), VK_VERTEX_INPUT_RATE_VERTEX),
@@ -577,7 +537,7 @@ void VulkanExample::preparePipelines()
 		struct MaterialSpecializationData {
 			VkBool32 alphaMask;
 			float alphaMaskCutoff;
-		} materialSpecializationData;
+		} materialSpecializationData{};
 
 		materialSpecializationData.alphaMask = material.alphaMode == "MASK";
 		materialSpecializationData.alphaMaskCutoff = material.alphaCutOff;
@@ -599,21 +559,18 @@ void VulkanExample::preparePipelines()
 
 void VulkanExample::prepareUniformBuffers()
 {
-	VK_CHECK_RESULT(vulkanDevice->createBuffer(
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		&shaderData.buffer,
-		sizeof(shaderData.values)));
-	VK_CHECK_RESULT(shaderData.buffer.map());
-	updateUniformBuffers();
+	for (auto& buffer : uniformBuffers) {
+		VK_CHECK_RESULT(vulkanDevice->createBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer, sizeof(UniformData), &uniformData));
+		VK_CHECK_RESULT(buffer.map());
+	}
 }
 
 void VulkanExample::updateUniformBuffers()
 {
-	shaderData.values.projection = camera.matrices.perspective;
-	shaderData.values.view = camera.matrices.view;
-	shaderData.values.viewPos = camera.viewPos;
-	memcpy(shaderData.buffer.mapped, &shaderData.values, sizeof(shaderData.values));
+	uniformData.projection = camera.matrices.perspective;
+	uniformData.view = camera.matrices.view;
+	uniformData.viewPos = camera.viewPos;
+	memcpy(uniformBuffers[currentBuffer].mapped, &uniformData, sizeof(UniformData));
 }
 
 void VulkanExample::prepare()
@@ -623,21 +580,52 @@ void VulkanExample::prepare()
 	prepareUniformBuffers();
 	setupDescriptors();
 	preparePipelines();
-	buildCommandBuffers();
 	prepared = true;
+}
+
+void VulkanExample::buildCommandBuffer()
+{
+	VkCommandBuffer cmdBuffer = drawCmdBuffers[currentBuffer];
+	
+	VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
+
+	VkClearValue clearValues[2]{};
+	clearValues[0].color = { { 0.25f, 0.25f, 0.25f, 1.0f } };;
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	VkRenderPassBeginInfo renderPassBeginInfo = vks::initializers::renderPassBeginInfo();
+	renderPassBeginInfo.renderPass = renderPass;
+	renderPassBeginInfo.renderArea.offset.x = 0;
+	renderPassBeginInfo.renderArea.offset.y = 0;
+	renderPassBeginInfo.renderArea.extent.width = width;
+	renderPassBeginInfo.renderArea.extent.height = height;
+	renderPassBeginInfo.clearValueCount = 2;
+	renderPassBeginInfo.pClearValues = clearValues;
+	renderPassBeginInfo.framebuffer = frameBuffers[currentImageIndex];
+
+	VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo));
+	vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	const VkViewport viewport = vks::initializers::viewport((float)width, (float)height, 0.0f, 1.0f);
+	vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+	const VkRect2D scissor = vks::initializers::rect2D(width, height, 0, 0);
+	vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+	// Bind scene matrices descriptor to set 0
+	vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentBuffer], 0, nullptr);
+
+	// POI: Draw the glTF scene
+	glTFScene.draw(cmdBuffer, pipelineLayout);
+
+	drawUI(cmdBuffer);
+	vkCmdEndRenderPass(cmdBuffer);
+	VK_CHECK_RESULT(vkEndCommandBuffer(cmdBuffer));
 }
 
 void VulkanExample::render()
 {
-	renderFrame();
-	if (camera.updated) {
-		updateUniformBuffers();
-	}
-}
-
-void VulkanExample::viewChanged()
-{
+	VulkanExampleBase::prepareFrame();
 	updateUniformBuffers();
+	buildCommandBuffer();
+	VulkanExampleBase::submitFrame();
 }
 
 void VulkanExample::OnUpdateUIOverlay(vks::UIOverlay* overlay)
@@ -646,12 +634,10 @@ void VulkanExample::OnUpdateUIOverlay(vks::UIOverlay* overlay)
 
 		if (overlay->button("All")) {
 			std::for_each(glTFScene.nodes.begin(), glTFScene.nodes.end(), [](VulkanglTFScene::Node* node) { node->visible = true; });
-			buildCommandBuffers();
 		}
 		ImGui::SameLine();
 		if (overlay->button("None")) {
 			std::for_each(glTFScene.nodes.begin(), glTFScene.nodes.end(), [](VulkanglTFScene::Node* node) { node->visible = false; });
-			buildCommandBuffers();
 		}
 		ImGui::NewLine();
 
@@ -659,10 +645,7 @@ void VulkanExample::OnUpdateUIOverlay(vks::UIOverlay* overlay)
 		ImGui::BeginChild("#nodelist", ImVec2(200.0f * overlay->scale, 340.0f * overlay->scale), false);
 		for (auto& node : glTFScene.nodes)
 		{		
-			if (overlay->checkBox(node->name.c_str(), &node->visible))
-			{
-				buildCommandBuffers();
-			}
+			overlay->checkBox(node->name.c_str(), &node->visible);
 		}
 		ImGui::EndChild();
 	}

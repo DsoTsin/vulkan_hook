@@ -1,17 +1,20 @@
 /*
  * Assorted commonly used Vulkan helper functions
  *
- * Copyright (C) 2016-2023 by Sascha Willems - www.saschawillems.de
+ * Copyright (C) 2016-2026 by Sascha Willems - www.saschawillems.de
  *
  * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
  */
 
 #include "VulkanTools.h"
 
-#if !(defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK))
-// iOS & macOS: VulkanExampleBase::getAssetPath() implemented externally to allow access to Objective-C components
+#if !(defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK) || defined(VK_USE_PLATFORM_METAL_EXT))
+// iOS & macOS: getAssetPath() and getShaderBasePath() implemented externally for access to Obj-C++ path utilities
 const std::string getAssetPath()
 {
+if (vks::tools::resourcePath != "") {
+	return vks::tools::resourcePath + "/assets/";
+}
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 	return "";
 #elif defined(VK_EXAMPLE_ASSETS_DIR)
@@ -20,12 +23,12 @@ const std::string getAssetPath()
 	return "./../assets/";
 #endif
 }
-#endif
 
-#if !(defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK))
-// iOS & macOS: VulkanExampleBase::getAssetPath() implemented externally to allow access to Objective-C components
 const std::string getShaderBasePath()
 {
+if (vks::tools::resourcePath != "") {
+	return vks::tools::resourcePath + "/shaders/";
+}
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 	return "shaders/";
 #elif defined(VK_EXAMPLE_SHADERS_DIR)
@@ -41,6 +44,7 @@ namespace vks
 	namespace tools
 	{
 		bool errorModeSilent = false;
+		std::string resourcePath = "";
 
 		std::string errorString(VkResult errorCode)
 		{
@@ -273,7 +277,7 @@ namespace vks
 				// Make sure any writes to the image have been finished
 				if (imageMemoryBarrier.srcAccessMask == 0)
 				{
-					imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+					imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 				}
 				imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 				break;
@@ -437,6 +441,12 @@ namespace vks
 		}
 
 		size_t alignedSize(size_t value, size_t alignment)
+		{
+			return (value + alignment - 1) & ~(alignment - 1);
+		}
+
+
+		VkDeviceSize alignedVkSize(VkDeviceSize value, VkDeviceSize alignment)
 		{
 			return (value + alignment - 1) & ~(alignment - 1);
 		}

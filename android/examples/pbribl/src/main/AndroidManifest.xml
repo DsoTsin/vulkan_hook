@@ -7,7 +7,8 @@
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         <activity android:name="de.saschawillems.vulkanSample.VulkanActivity"
             android:screenOrientation="landscape"
-            android:configChanges="orientation|keyboardHidden">
+            android:configChanges="orientation|keyboardHidden"
+            android:exported="true">
             <meta-data android:name="android.app.lib_name"
                 android:value="native-lib" />
             <intent-filter>
@@ -19,8 +20,5 @@
 
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.hardware.gamepad" android:required="false" />
-
-    <uses-permission android:name="android.permission.INTERNET" />
-
 
 </manifest>

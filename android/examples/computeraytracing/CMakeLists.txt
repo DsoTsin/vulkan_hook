@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.4.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
+
+
 
 set(NAME computeraytracing)
 
@@ -8,7 +10,7 @@ set(EXTERNAL_DIR ../../../external)
 
 add_subdirectory(../../../mali_syshook ${CMAKE_SOURCE_DIR}/../../../mali_syshook)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DVK_USE_PLATFORM_ANDROID_KHR -DVK_NO_PROTOTYPES")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -DVK_USE_PLATFORM_ANDROID_KHR -DVK_NO_PROTOTYPES")
 
 file(GLOB EXAMPLE_SRC "${SRC_DIR}/*.cpp")
 

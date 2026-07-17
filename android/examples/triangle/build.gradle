@@ -14,20 +14,19 @@ android {
         }
         externalNativeBuild {
             cmake {
-                cppFlags "-std=c++14"
+                cppFlags "-std=c++20"
                 arguments "-DANDROID_STL=c++_static", '-DANDROID_TOOLCHAIN=clang', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
                 targets "native-lib", "mali_syshook"
             }
         }
     }
-    sourceSets {
-        main.assets.srcDirs = ['assets']
-    }
-
     packaging {
         jniLibs {
             useLegacyPackaging = true
         }
+    }
+    sourceSets {
+        main.assets.srcDirs = ['assets']
     }
     buildTypes {
         release {
